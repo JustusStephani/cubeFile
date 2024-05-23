@@ -69,3 +69,8 @@ class Test_CubeFile:
             ), "incorrect simulationBoxSize"
             assert np.array_equal(c.data.shape, (31, 31, 31)), "incorrect data.shape"
             assert c.data[12, 14, 2] == 0.000139717, "incorrect data value [12, 14, 2]"
+
+
+    def test_integrateEntireCubeData(self):
+        with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
+            assert c.integrateEntireCubeData() == 4.000000032435042

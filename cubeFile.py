@@ -257,3 +257,18 @@ class CubeFile:
         """
         leadingInt, listOfFloats = self._readHeaderLineShort(file)
         return leadingInt, listOfFloats[0], listOfFloats[1:]
+
+
+    def integrateEntireCubeData(self) -> float:
+        ''' Integratet (sum) all the data of the cube file
+            This is the number of electrons fi the cube file contains electron denstiy
+        params: 
+                None
+        return: 
+                numberOfElectrons (float): The result of the integration
+        '''
+        volume = self.voxelSizeX * self.voxelSizeY * self.voxelSizeZ
+        electronDensity = np.sum(self.data)
+        numberOfElectrons = volume * electronDensity
+
+        return numberOfElectrons
