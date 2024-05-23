@@ -1,3 +1,9 @@
+"""
+Implements the Class "CubeFile"
+
+Author: Justus Stephani
+"""
+
 import os
 
 import numpy as np
@@ -18,7 +24,11 @@ loggerDebug = logging.getLogger("debug")
 
 
 class CubeFile:
-    """Class Cube File"""
+    """Class Cube File
+    Implemented as a context manager.
+    - Read a gaussian cube files.
+    - Integrate data in various forms.
+    """
 
     elementNumToString = {
         0: "udf",
@@ -259,33 +269,33 @@ class CubeFile:
         leadingInt, listOfFloats = self._readHeaderLineShort(file)
         return leadingInt, listOfFloats[0], listOfFloats[1:]
 
-
     def integrateEntireCubeData(self) -> float:
-        ''' Integratet (sum) all the data of the cube file
+        """Integratet (sum) all the data of the cube file
             This is the number of electrons fi the cube file contains electron denstiy
-        params: 
+        params:
                 None
-        return: 
+        return:
                 numberOfElectrons (float): The result of the integration
-        '''
+        """
         volume = self.voxelSizeX * self.voxelSizeY * self.voxelSizeZ
         electronDensity = np.sum(self.data)
         numberOfElectrons = volume * electronDensity
 
         return numberOfElectrons
-    
 
-    def integrateCubicRegion(self, startVoxels: npt.ArrayLike, endVoxels: npt.ArrayLike) -> float:
-        ''' Integratet (sum) a cubic region of the cube file.
+    def integrateCubicRegion(
+        self, startVoxels: npt.ArrayLike, endVoxels: npt.ArrayLike
+    ) -> float:
+        """Integratet (sum) a cubic region of the cube file.
             The region is defined by start Voxesl in 3 dimension e.g. [0, 0, 15] and
             end Voxesl in 3 dimension e.g. [12, 12, 20]
             This would sum up the region (0->12, 0->12, 15->20)
-        params: 
+        params:
                 startVoxels (np.array([], dtype=int)): The "coordinates" Voxels of the start of the region
                 endVoxels (np.array([], dtype=int)): The "coordinates" Voxels of the end of the region
-        return: 
+        return:
                 numberOfElectrons (float): The result of the integration
-        '''
+        """
         assert len(startVoxels) == len(endVoxels) == 3
 
         assert startVoxels[0] < endVoxels[0]
@@ -296,45 +306,54 @@ class CubeFile:
         assert endVoxels[1] <= self.numberOfVoxelsY
         assert endVoxels[2] <= self.numberOfVoxelsZ
 
-        electronDensity = np.sum(self.data[startVoxels[0]:endVoxels[0],
-                                           startVoxels[1]:endVoxels[1],
-                                           startVoxels[2]:endVoxels[2],
-                                           ])
+        electronDensity = np.sum(
+            self.data[
+                startVoxels[0] : endVoxels[0],
+                startVoxels[1] : endVoxels[1],
+                startVoxels[2] : endVoxels[2],
+            ]
+        )
 
         volume = self.voxelSizeX * self.voxelSizeY * self.voxelSizeZ
 
         numberOfElectrons = volume * electronDensity
 
         return numberOfElectrons
-    
 
-    def integrateCubeDataAroundAtoms(self, indices: npt.ArrayLike, integrationRadius:float=7.0) -> float:
-        ''' Integratet (sum) a spherical region around atoms.
+    def integrateCubeDataAroundAtoms(
+        self, indices: npt.ArrayLike, integrationRadius: float = 7.0
+    ) -> float:
+        """Integratet (sum) a spherical region around atoms.
             The atoms are defined by their index.
             The spherical region is defined by an radius and the coordinates of the atoms
-        params: 
+        params:
                 indices (np.array([])): The indices of the atoms
                 integrationRadius (float): The radius of the spheres
-        return: 
+        return:
                 numberOfElectrons (float): The result of the integration
-        '''
+        """
         coordinatesOfReferenceAtoms = self.coordinatesOfAtoms[indices, :]
-        coordinatesOfReferenceAtoms = coordinatesOfReferenceAtoms + self.simulationBoxSize/2
+        coordinatesOfReferenceAtoms = (
+            coordinatesOfReferenceAtoms + self.simulationBoxSize / 2
+        )
 
-        numberOfElectrons = self.integrateSpheres(coordinatesOfReferenceAtoms, integrationRadius)
-    
+        numberOfElectrons = self.integrateSpheres(
+            coordinatesOfReferenceAtoms, integrationRadius
+        )
+
         return numberOfElectrons
 
-
-    def integrateSpheres(self, referenceCoordinates: npt.ArrayLike, integrationRadius: float) -> float:
-        ''' Integratet (sum) a spherical region
+    def integrateSpheres(
+        self, referenceCoordinates: npt.ArrayLike, integrationRadius: float
+    ) -> float:
+        """Integratet (sum) a spherical region
             The spherical region is defined by an referenceCoordinates and a radius.
-        params: 
+        params:
                 referenceCoordinates (np.array([])): the xyz coordinates of the sphere
                 integrationRadius (float): The radius of the spheres
-        return: 
+        return:
                 numberOfElectrons (float): The result of the integration
-        '''
+        """
         if not isinstance(referenceCoordinates, np.ndarray):
             referenceCoordinates = np.array(referenceCoordinates)
 
@@ -343,7 +362,9 @@ class CubeFile:
             referenceCoordinates = np.array([referenceCoordinates])
 
         # create a mask to lay over the cube data
-        mask = np.zeros([self.numberOfVoxelsX, self.numberOfVoxelsY, self.numberOfVoxelsZ])
+        mask = np.zeros(
+            [self.numberOfVoxelsX, self.numberOfVoxelsY, self.numberOfVoxelsZ]
+        )
         mask = mask.astype(bool)
 
         # create three 3d Matrices, same shape as the mask
@@ -356,31 +377,43 @@ class CubeFile:
         distancesX = distancesX.reshape(self.numberOfVoxelsX, 1)
         distancesX = np.repeat(distancesX, self.numberOfVoxelsZ, axis=1)
         distancesX = np.expand_dims(distancesX, axis=1)
-        distancesX = np.repeat(distancesX, self.numberOfVoxelsY, axis=1) 
+        distancesX = np.repeat(distancesX, self.numberOfVoxelsY, axis=1)
 
         # 2. Distance from origin in Y Direction
         distancesY = np.linspace(0, self.simulationBoxSize[1], self.numberOfVoxelsY)
         distancesY = distancesY.reshape(self.numberOfVoxelsY, 1)
-        distancesY = np.tile(distancesY, (self.numberOfVoxelsX, 1, self.numberOfVoxelsZ))
-        
+        distancesY = np.tile(
+            distancesY, (self.numberOfVoxelsX, 1, self.numberOfVoxelsZ)
+        )
+
         # 3. Distance from origin in Z Direction
-        distancesZ = np.linspace(0, self.numberOfVoxelsZ*self.voxelSizeZ-self.voxelSizeZ, self.numberOfVoxelsZ)
-        distancesZ = np.tile(distancesZ, (self.numberOfVoxelsX, self.numberOfVoxelsY, 1))
+        distancesZ = np.linspace(
+            0,
+            self.numberOfVoxelsZ * self.voxelSizeZ - self.voxelSizeZ,
+            self.numberOfVoxelsZ,
+        )
+        distancesZ = np.tile(
+            distancesZ, (self.numberOfVoxelsX, self.numberOfVoxelsY, 1)
+        )
 
         # create a individual mask for each atom. These masks are joined to a single mask
         for coor in referenceCoordinates:
-            distancesToAtom = np.sqrt((distancesX - coor[0])**2 + (distancesY - coor[1])**2 + (distancesZ - coor[2])**2)
+            distancesToAtom = np.sqrt(
+                (distancesX - coor[0]) ** 2
+                + (distancesY - coor[1]) ** 2
+                + (distancesZ - coor[2]) ** 2
+            )
 
             mask += distancesToAtom <= integrationRadius
-        
+
         # calculate the electron density
         electronDensity = np.sum(mask * self.data)
 
-        voxelMatrix = np.array([[self.voxelSizeX, 0, 0],
-                               [0, self.voxelSizeY, 0],
-                               [0, 0, self.voxelSizeZ]])
+        voxelMatrix = np.array(
+            [[self.voxelSizeX, 0, 0], [0, self.voxelSizeY, 0], [0, 0, self.voxelSizeZ]]
+        )
         volume = np.linalg.det(voxelMatrix)
 
         numberOfElectrons = volume * electronDensity
 
-        return numberOfElectrons 
+        return numberOfElectrons

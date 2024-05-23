@@ -70,22 +70,27 @@ class Test_CubeFile:
             assert np.array_equal(c.data.shape, (31, 31, 31)), "incorrect data.shape"
             assert c.data[12, 14, 2] == 0.000139717, "incorrect data value [12, 14, 2]"
 
-
     def test_integrateEntireCubeData(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
             assert c.integrateEntireCubeData() == 4.000000032435042
 
-    
     def test_integrateCubicRegion(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
-            assert c.integrateCubicRegion([0, 0, 0],[31, 31, 31]) == 4.000000032435042
+            assert c.integrateCubicRegion([0, 0, 0], [31, 31, 31]) == 4.000000032435042
 
-    
     def test_integrateCubeDataAroundAtoms(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
-            assert c.integrateCubeDataAroundAtoms([0], integrationRadius=5) == 3.9999834582299982
-
+            assert (
+                c.integrateCubeDataAroundAtoms([0], integrationRadius=5)
+                == 3.9999834582299982
+            )
 
     def test_integrateSpheres(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
-            assert c.integrateSpheres([0.739512+4.5, 0.000000+4.5, 0.000000+4.5], integrationRadius=5) == 3.9999834582299982
+            assert (
+                c.integrateSpheres(
+                    [0.739512 + 4.5, 0.000000 + 4.5, 0.000000 + 4.5],
+                    integrationRadius=5,
+                )
+                == 3.9999834582299982
+            )
