@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.typing as npt
 
 import logging
 import logging.config
@@ -269,6 +270,39 @@ class CubeFile:
         '''
         volume = self.voxelSizeX * self.voxelSizeY * self.voxelSizeZ
         electronDensity = np.sum(self.data)
+        numberOfElectrons = volume * electronDensity
+
+        return numberOfElectrons
+    
+    
+    def integrateCubicRegion(self, startVoxels: npt.ArrayLike, endVoxels: npt.ArrayLike) -> float:
+        ''' Integratet (sum) a cubic region of the cube file.
+            The region is defined by start Voxesl in 3 dimension e.g. [0, 0, 15] and
+            end Voxesl in 3 dimension e.g. [12, 12, 20]
+            This would sum up the region (0->12, 0->12, 15->20)
+        params: 
+                startVoxels (np.array([], dtype=int)): The "coordinates" Voxels of the start of the region
+                endVoxels (np.array([], dtype=int)): The "coordinates" Voxels of the end of the region
+        return: 
+                numberOfElectrons (float): The result of the integration
+        '''
+        assert len(startVoxels) == len(endVoxels) == 3
+
+        assert startVoxels[0] < endVoxels[0]
+        assert startVoxels[1] < endVoxels[1]
+        assert startVoxels[2] < endVoxels[2]
+
+        assert endVoxels[0] <= self.numberOfVoxelsX
+        assert endVoxels[1] <= self.numberOfVoxelsY
+        assert endVoxels[2] <= self.numberOfVoxelsZ
+
+        electronDensity = np.sum(self.data[startVoxels[0]:endVoxels[0],
+                                           startVoxels[1]:endVoxels[1],
+                                           startVoxels[2]:endVoxels[2],
+                                           ])
+
+        volume = self.voxelSizeX * self.voxelSizeY * self.voxelSizeZ
+
         numberOfElectrons = volume * electronDensity
 
         return numberOfElectrons

@@ -74,3 +74,8 @@ class Test_CubeFile:
     def test_integrateEntireCubeData(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
             assert c.integrateEntireCubeData() == 4.000000032435042
+
+    
+    def test_integrateCubicRegion(self):
+        with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
+            assert c.integrateCubicRegion([0, 0, 0],[31, 31, 31]) == 4.000000032435042
