@@ -274,7 +274,7 @@ class CubeFile:
 
         return numberOfElectrons
     
-    
+
     def integrateCubicRegion(self, startVoxels: npt.ArrayLike, endVoxels: npt.ArrayLike) -> float:
         ''' Integratet (sum) a cubic region of the cube file.
             The region is defined by start Voxesl in 3 dimension e.g. [0, 0, 15] and
@@ -306,3 +306,81 @@ class CubeFile:
         numberOfElectrons = volume * electronDensity
 
         return numberOfElectrons
+    
+
+    def integrateCubeDataAroundAtoms(self, indices: npt.ArrayLike, integrationRadius:float=7.0) -> float:
+        ''' Integratet (sum) a spherical region around atoms.
+            The atoms are defined by their index.
+            The spherical region is defined by an radius and the coordinates of the atoms
+        params: 
+                indices (np.array([])): The indices of the atoms
+                integrationRadius (float): The radius of the spheres
+        return: 
+                numberOfElectrons (float): The result of the integration
+        '''
+        coordinatesOfReferenceAtoms = self.coordinatesOfAtoms[indices, :]
+        coordinatesOfReferenceAtoms = coordinatesOfReferenceAtoms + self.simulationBoxSize/2
+
+        numberOfElectrons = self.integrateSpheres(coordinatesOfReferenceAtoms, integrationRadius)
+    
+        return numberOfElectrons
+
+
+    def integrateSpheres(self, referenceCoordinates: npt.ArrayLike, integrationRadius: float) -> float:
+        ''' Integratet (sum) a spherical region
+            The spherical region is defined by an referenceCoordinates and a radius.
+        params: 
+                referenceCoordinates (np.array([])): the xyz coordinates of the sphere
+                integrationRadius (float): The radius of the spheres
+        return: 
+                numberOfElectrons (float): The result of the integration
+        '''
+        if not isinstance(referenceCoordinates, np.ndarray):
+            referenceCoordinates = np.array(referenceCoordinates)
+
+        # make sure refCoordinatesBohr has two dimensions
+        if len(referenceCoordinates.shape) == 1:
+            referenceCoordinates = np.array([referenceCoordinates])
+
+        # create a mask to lay over the cube data
+        mask = np.zeros([self.numberOfVoxelsX, self.numberOfVoxelsY, self.numberOfVoxelsZ])
+        mask = mask.astype(bool)
+
+        # create three 3d Matrices, same shape as the mask
+        # 1. martix -> distances from origin in x Direction
+        # 2. martix -> distances from origin in y Direction
+        # 3. martix -> distances from origin in z Direction
+
+        # 1. Distance from origin in X Direction
+        distancesX = np.linspace(0, self.simulationBoxSize[0], self.numberOfVoxelsX)
+        distancesX = distancesX.reshape(self.numberOfVoxelsX, 1)
+        distancesX = np.repeat(distancesX, self.numberOfVoxelsZ, axis=1)
+        distancesX = np.expand_dims(distancesX, axis=1)
+        distancesX = np.repeat(distancesX, self.numberOfVoxelsY, axis=1) 
+
+        # 2. Distance from origin in Y Direction
+        distancesY = np.linspace(0, self.simulationBoxSize[1], self.numberOfVoxelsY)
+        distancesY = distancesY.reshape(self.numberOfVoxelsY, 1)
+        distancesY = np.tile(distancesY, (self.numberOfVoxelsX, 1, self.numberOfVoxelsZ))
+        
+        # 3. Distance from origin in Z Direction
+        distancesZ = np.linspace(0, self.numberOfVoxelsZ*self.voxelSizeZ-self.voxelSizeZ, self.numberOfVoxelsZ)
+        distancesZ = np.tile(distancesZ, (self.numberOfVoxelsX, self.numberOfVoxelsY, 1))
+
+        # create a individual mask for each atom. These masks are joined to a single mask
+        for coor in referenceCoordinates:
+            distancesToAtom = np.sqrt((distancesX - coor[0])**2 + (distancesY - coor[1])**2 + (distancesZ - coor[2])**2)
+
+            mask += distancesToAtom <= integrationRadius
+        
+        # calculate the electron density
+        electronDensity = np.sum(mask * self.data)
+
+        voxelMatrix = np.array([[self.voxelSizeX, 0, 0],
+                               [0, self.voxelSizeY, 0],
+                               [0, 0, self.voxelSizeZ]])
+        volume = np.linalg.det(voxelMatrix)
+
+        numberOfElectrons = volume * electronDensity
+
+        return numberOfElectrons 

@@ -79,3 +79,13 @@ class Test_CubeFile:
     def test_integrateCubicRegion(self):
         with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
             assert c.integrateCubicRegion([0, 0, 0],[31, 31, 31]) == 4.000000032435042
+
+    
+    def test_integrateCubeDataAroundAtoms(self):
+        with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
+            assert c.integrateCubeDataAroundAtoms([0], integrationRadius=5) == 3.9999834582299982
+
+
+    def test_integrateSpheres(self):
+        with CubeFile(PATH_TO_MOCK_CUBE_FILE) as c:
+            assert c.integrateSpheres([0.739512+4.5, 0.000000+4.5, 0.000000+4.5], integrationRadius=5) == 3.9999834582299982
